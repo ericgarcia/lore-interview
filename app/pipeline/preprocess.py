@@ -30,14 +30,13 @@ def build_turn_pairs(request: ConversationInput | DiscussionInput) -> list[TurnP
 def _from_conversation(req: ConversationInput) -> list[TurnPair]:
     pairs: list[TurnPair] = []
     last_bot: str | None = None
-    turn_index = 0
 
-    for msg in req.turns:
+    for raw_index, msg in enumerate(req.turns):
         if msg.ref_user_id == STORYBOT_USER_ID:
             last_bot = msg.message
         else:
             pairs.append(TurnPair(
-                turn_index=turn_index,
+                turn_index=raw_index,
                 preceding_context=last_bot,
                 user_response=msg.message,
                 prompted=last_bot is not None,
@@ -48,7 +47,6 @@ def _from_conversation(req: ConversationInput) -> list[TurnPair]:
                 comment_id=None,
                 source_type="conversation",
             ))
-            turn_index += 1
             last_bot = None
 
     return pairs
@@ -63,9 +61,8 @@ def _from_discussion(req: DiscussionInput) -> list[TurnPair]:
             break
 
     pairs: list[TurnPair] = []
-    turn_index = 0
 
-    for msg in req.turns:
+    for raw_index, msg in enumerate(req.turns):
         if msg.reported_or_removed:
             continue
         if msg.author_ref_user_id != req.ref_user_id:
@@ -73,7 +70,7 @@ def _from_discussion(req: DiscussionInput) -> list[TurnPair]:
 
         is_op = msg.comment_id is None
         pairs.append(TurnPair(
-            turn_index=turn_index,
+            turn_index=raw_index,
             preceding_context=None if is_op else original_post,
             user_response=msg.text,
             prompted=False,
@@ -84,7 +81,6 @@ def _from_discussion(req: DiscussionInput) -> list[TurnPair]:
             comment_id=msg.comment_id,
             source_type="discussion",
         ))
-        turn_index += 1
 
     return pairs
 

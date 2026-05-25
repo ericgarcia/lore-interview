@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from baml_client import b
+from baml_client.sync_client import b
 from baml_client.types import ExtractedBelief, AffectiveCharge
 from app.pipeline.preprocess import TurnPair
 
