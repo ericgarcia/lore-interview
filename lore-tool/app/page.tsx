@@ -66,6 +66,12 @@ export default function Home() {
           <p className="text-xs text-[#6b7280] mt-0.5">
             {index ? `${index.users.length} users` : "Loading data…"}
           </p>
+          <Link
+            href="/metrics"
+            className="mt-2 inline-flex items-center gap-1 text-xs text-[#6b7280] hover:text-indigo-400 transition-colors"
+          >
+            ↗ Pipeline Metrics
+          </Link>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           {error && (
@@ -92,11 +98,11 @@ export default function Home() {
                 </p>
               </button>
               <Link
-                href={`/beliefs/${user.ref_user_id}`}
+                href={`/beliefs/${user.ref_user_id}/categories`}
                 className="mr-2 text-[10px] px-2 py-1 rounded border border-[#2e3350] text-[#6b7280] hover:text-indigo-400 hover:border-indigo-700 transition-colors"
-                title="View belief timeline"
+                title="View belief categories"
               >
-                timeline
+                beliefs
               </Link>
             </div>
           ))}
@@ -111,9 +117,17 @@ export default function Home() {
           </div>
         ) : (
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-lg font-semibold text-[#e8eaf0] mb-1">
-              {selectedUser.screen_name ?? `User ${selectedUser.ref_user_id}`}
-            </h2>
+            <div className="flex items-start justify-between mb-1">
+              <h2 className="text-lg font-semibold text-[#e8eaf0]">
+                {selectedUser.screen_name ?? `User ${selectedUser.ref_user_id}`}
+              </h2>
+              <Link
+                href={`/beliefs/${selectedUser.ref_user_id}/categories`}
+                className="text-xs px-3 py-1.5 rounded border border-indigo-700 text-indigo-400 hover:bg-indigo-950/50 transition-colors"
+              >
+                Belief Categories →
+              </Link>
+            </div>
             <p className="text-xs text-[#6b7280] mb-4">
               ref_user_id: {selectedUser.ref_user_id} · {selectedUser.sources.length} sources
             </p>

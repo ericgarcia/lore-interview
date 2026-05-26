@@ -166,3 +166,99 @@ export interface UserBeliefsResponse {
   user_id: string;
   lineages: BeliefLineage[];
 }
+
+// NLI rejection QA types
+
+export type RejectionReason = "no_evidence" | "low_commitment" | "nli_threshold";
+
+export interface RejectedBelief {
+  id: string;
+  rejection_reason: RejectionReason;
+  belief_text: string;
+  belief_type: "explicit" | "implicit";
+  subject_tag: string;
+  self_domain: string;
+  polarity: string;
+  claim_commitment: number;
+  crystallization: number;
+  affective_charge: string | null;
+  evidence_spans: string[];
+  depth_markers: string[];
+  nli_premise: string | null;
+  nli_score: number | null;
+  nli_threshold: number | null;
+}
+
+export interface RejectedBeliefResponse {
+  source_id: string;
+  rejected: RejectedBelief[];
+}
+
+// Belief category types (RFC 0005)
+
+export interface CategoryAdjacentItem {
+  category_id: string;
+  label: string;
+  similarity: number;
+}
+
+export interface CategoryBelief {
+  canonical_id: string;
+  belief_text: string;
+  self_domain: string;
+  polarity: string;
+  claim_commitment: number;
+  crystallization: number;
+  affective_charge: string | null;
+  belief_state: string;
+  valid_from: string;
+}
+
+export interface BeliefCategory {
+  category_id: string;
+  label: string;
+  adjacent: CategoryAdjacentItem[];
+  beliefs: CategoryBelief[];
+}
+
+export interface UserCategoriesResponse {
+  user_id: string;
+  categories: BeliefCategory[];
+}
+
+// Metrics dashboard types (RFC 0004)
+
+export interface MetricsSummary {
+  total_evaluations: number;
+  avg_latency_ms: number | null;
+  p90_latency_ms: number | null;
+  avg_tokens_in: number | null;
+  avg_tokens_out: number | null;
+  total_tokens_in: number;
+  total_tokens_out: number;
+  avg_llm_retries: number | null;
+  avg_richness_score: number | null;
+  avg_nli_rejection_rate: number | null;
+  viable_rate: number | null;
+  beliefs_by_domain: Record<string, number>;
+  beliefs_by_polarity: Record<string, number>;
+  beliefs_by_affective_charge: Record<string, number>;
+  beliefs_by_delta: Record<string, number>;
+  beliefs_by_state: Record<string, number>;
+  avg_nli_confidence: number | null;
+  avg_claim_commitment: number | null;
+  avg_crystallization: number | null;
+}
+
+export interface MetricsHistoryRow {
+  evaluated_at: string;
+  source_type: string;
+  total_latency_ms: number | null;
+  llm_tokens_in: number | null;
+  llm_tokens_out: number | null;
+  llm_retry_count: number | null;
+  richness_score: number | null;
+  beliefs_final: number | null;
+  nli_rejection_rate: number | null;
+  viable: number | null;
+}

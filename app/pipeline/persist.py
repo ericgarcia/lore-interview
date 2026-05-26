@@ -8,6 +8,7 @@ from app.models.output import BeliefObject
 from app.db.schema import get_connection, init_db
 from app.db import vectors as vec_store
 from app.pipeline.match import BeliefInput, run_matching_pipeline, encode
+from app.pipeline.categories import assign_category, write_membership
 
 _initialized = False
 
@@ -229,6 +230,9 @@ def persist_beliefs(
                 )
         finally:
             conn.close()
+
+        category_id = assign_category(b.subject_tag, user_id)
+        write_membership(final_id, category_id)
 
     # ── Cleanup: fix dangling related_to references ───────────────────────────
     # If belief A linked intra-session to provisional B, but B was later absorbed
