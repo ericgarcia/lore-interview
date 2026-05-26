@@ -183,6 +183,93 @@ curl -N http://localhost:8000/batch/{batch_id}/progress
 
 ---
 
+## Evaluation result schema
+
+Every evaluation — whether run via `POST /conversations/evaluate` or retrieved from `GET /evaluations/{source_id}` — returns the same shape. Here is the top-level structure:
+
+```json
+{
+  "schema_version": "1.0",
+  "source_type": "conversation",
+  "ref_conversation_id": 92818,
+  "post_id": null,
+  "ref_user_id": 66,
+  "processing_mode": "sync",
+  "extraction_method": "baml+nli",
+  "data_quality": { ... },
+  "signal": { ... },
+  "beliefs": [ ... ]
+}
+```
+
+### `data_quality`
+
+Metadata about the source conversation that shapes how much trust to place in the extraction.
+
+| Field | Type | Description |
+|---|---|---|
+| `turn_count` | int | Number of user turns that were processed. More turns generally produce more reliable extraction. |
+| `viable` | bool | `true` if `turn_count >= 8`. Short conversations (a single exchange, for example) rarely contain enough context for the model to distinguish genuine self-beliefs from conversational pleasantries. |
+| `confidence_adjustment` | float 0–1 | `min(1.0, turn_count / 8)`. Applied as a multiplier to every belief's `confidence` score, scaling it down for short conversations. A three-turn exchange yields a 0.375 adjustment; anything over eight turns is full confidence. |
+| `viable_threshold` | int | The threshold used (currently `8`). Stored in the result so the threshold can change without invalidating historical data. |
+
+### `signal`
+
+A roll-up of what the extraction found, intended as a fast diagnostic without unpacking individual beliefs.
+
+| Field | Type | Description |
+|---|---|---|
+| `richness_score` | float | `belief_count / turn_count`. How many beliefs per turn. A conversation where someone articulates one belief per two turns (0.5) is substantially richer than a surface-level check-in (0.1). |
+| `belief_count` | int | Total beliefs in the `beliefs` array after deduplication and NLI verification. |
+| `high_confidence_count` | int | Beliefs with `confidence >= 0.7`. A rough proxy for how many beliefs are strongly grounded in the text. |
+| `dominant_self_domain` | string \| null | The `self_domain` value with the most beliefs in this evaluation. Useful for quickly characterising a conversation — was this primarily about identity, capability, or values? |
+| `beliefs_by_domain` | object | Count per `self_domain` value across all five domains. |
+| `domain_summaries` | array | One entry per domain that has at least one belief: `{ domain, belief_count, avg_commitment, avg_crystallization }`. Useful for comparing how firmly vs. tentatively beliefs are held across domains. |
+
+### `beliefs[]`
+
+Each entry is a single extracted self-belief.
+
+#### Identity and text
+
+| Field | Type | Description |
+|---|---|---|
+| `belief_id` | string | Deterministic ID: `"b_" + sha256(user_id + belief_text + domain)[:8]`. The same belief re-extracted from a different conversation will produce the same ID, enabling deduplication in the belief graph. |
+| `belief_text` | string | A clean, first-person statement of the belief in the user's voice — edited for clarity, not verbatim. e.g. `"Running is core to how I see myself."` |
+| `belief_type` | `"explicit"` \| `"implicit"` | `explicit` means the user stated it directly. `implicit` means the model reasonably inferred it from what they said — held to a higher NLI threshold. |
+| `subject_tag` | string | A 2–5 word noun phrase naming the life topic: `"physical fitness"`, `"professional identity"`, `"body image and limits"`. Used as the seed for belief category clustering (RFC 0005). Stable vocabulary: the same topic should produce the same tag across conversations. |
+| `evidence_span` | string | The exact quote from the conversation that most directly supports this belief. The primary anchor for human review and NLI verification. |
+| `depth_markers` | string[] | Specific words or phrases that drove the `claim_commitment` and `crystallization` scores — e.g. `["I've always", "that's just who I am"]`. Useful for understanding why those scores landed where they did. |
+
+#### Classification
+
+| Field | Type | Description |
+|---|---|---|
+| `self_domain` | enum | Which dimension of self-perception this belief belongs to. **`identity`** — core sense of who they are. **`capability`** — what they can or can't do. **`value`** — what matters to them morally or personally. **`relational`** — how they see themselves in relation to others (roles they hold, not facts about other people). **`aspirational`** — who they want to become or are working toward. |
+| `polarity` | `"positive"` \| `"negative"` \| `"neutral"` | How the user frames this self-perception. Positive = pride or affirmation. Negative = loss, limitation, or concern. Neutral = matter-of-fact. This is about framing, not objective valence — "I've always struggled with consistency" is negative even if the speaker is at peace with it. |
+| `temporal_scope` | string \| null | `habitual` (ongoing pattern), `permanent` (fixed trait), `situational` (specific context), or `general` (applies broadly). Null when the user gives no temporal signal. |
+| `affective_charge` | enum \| null | Emotional quality of how the belief is held, scored only when surface evidence is present — never guessed. **`distress`** — anxiety, pain, or fear. **`defiant`** — identity assertion or resistance to challenge. **`resigned`** — reluctant acceptance of an unwanted reality. **`enthusiastic`** — pride, excitement, or energy. **`neutral`** — matter-of-fact, no detectable charge. Null if evidence is insufficient. |
+
+#### Confidence and weight
+
+| Field | Type | Description |
+|---|---|---|
+| `nli_confidence` | float 0–1 | Raw NLI entailment score: how strongly the model's extracted belief is entailed by the full user turn text used as the NLI premise. The full turn (not just the evidence span) is used to resolve anaphora. |
+| `confidence` | float 0–1 | `nli_confidence × confidence_adjustment`. The final belief confidence, scaled down for short conversations. This is the score to use downstream. |
+| `claim_commitment` | float 0–1 | How firmly the speaker presents this belief as fixed, scored by the LLM. Copula frames (`"I am X"`, `"I've always been X"`) score near 1.0; hedged frames (`"I tend to"`, `"I suppose I"`) score near 0.2. Measures _assertion strength_. |
+| `crystallization` | float 0–1 | How open the speaker is to revising this belief. `"That's just who I am"` → 1.0; `"I'm still figuring this out"` → 0.0; actively questioning (`"lately I've been rethinking"`) → below 0.3. **Distinct from `claim_commitment`**: someone can assert a belief strongly while also holding it lightly. |
+| `belief_state` | `"crystallized"` \| `"transitioning"` | Derived from `crystallization`: `>= 0.6` is `crystallized`, below is `transitioning`. A convenience field for filtering without thresholding manually. |
+| `session_weight` | float | `log(session_number + 1)`. Beliefs from later conversations in a long-running relationship carry more weight than first-session disclosures. Always `0.693` for a first session. |
+
+#### Provenance
+
+| Field | Type | Description |
+|---|---|---|
+| `source_evidence` | array | One entry per turn this belief draws from: `{ ref_conversation_id, turn_index, transaction_datetime_utc, post_id, comment_id }`. A belief can span multiple turns (e.g. an answer that continues across two messages). |
+| `delta` | `"new"` \| `"reinforced"` \| `"contradicted"` \| `"unchanged"` | How this belief relates to the user's prior belief graph. `new` if no matching belief existed before. `reinforced` if a belief with the same ID was already present. `contradicted` and `unchanged` are set during the graph persistence pass, not here. |
+
+---
+
 ## Testing the endpoint
 
 A minimal end-to-end test using the seeded data:
