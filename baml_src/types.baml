@@ -30,6 +30,7 @@ class TurnPair {
 class ExtractedBelief {
   belief_text      string     @description("A clean, concise statement of the self-belief in the user's own voice. Must be a first-person claim about the self, not about an external subject.")
   belief_type      string     @description("explicit if directly stated by the user, implicit if reasonably inferred from what they said")
+  subject_tag      string     @description("A short noun phrase (2-5 words) naming the specific life topic this belief is about — the concrete subject matter, not the emotional framing. Focus on what the belief is literally about. Examples: 'physical fitness', 'diet and nutrition', 'body image and limits', 'emotional regulation', 'professional identity', 'injury recovery'. Use stable vocabulary: the same topic should produce the same tag across different conversations.")
   self_domain      SelfDomain
   polarity         Polarity
   temporal_scope   string?    @description("habitual | permanent | situational | general")

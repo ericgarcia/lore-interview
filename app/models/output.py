@@ -24,6 +24,7 @@ class BeliefObject(BaseModel):
     belief_id: str
     belief_text: str
     belief_type: Literal["explicit", "implicit"]
+    subject_tag: str = ""
     self_domain: SelfDomain
     polarity: Literal["positive", "negative", "neutral"]
     temporal_scope: str | None = None

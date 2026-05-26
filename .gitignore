@@ -18,3 +18,8 @@ prep/
 
 # BAML generated client (source of truth is baml_src/)
 baml_client/
+
+# Runtime data
+lore.db
+lore_vectors/
+.playwright-mcp/

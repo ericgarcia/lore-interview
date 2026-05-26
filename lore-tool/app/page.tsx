@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { DataIndex, UserEntry, SourceSummary } from "@/lib/types";
+import Link from "next/link";
 
 function SourceCard({
   source,
-  onEvaluate,
+  onClick,
 }: {
   source: SourceSummary;
-  onEvaluate: () => void;
+  onClick: () => void;
 }) {
   const isConv = source.source_type === "conversation";
   const label = isConv
@@ -20,29 +21,18 @@ function SourceCard({
     : null;
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-[#2e3350] bg-[#22263a] px-3 py-2">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between rounded-lg border border-[#2e3350] bg-[#22263a] hover:bg-[#272b40] hover:border-indigo-700 px-3 py-2.5 text-left transition-colors"
+    >
       <div>
         <p className="text-sm text-[#e8eaf0]">{label}</p>
         <p className="text-xs text-[#6b7280]">
           {source.turn_count} turns{date ? ` · ${date}` : ""}
         </p>
       </div>
-      <div className="flex items-center gap-2">
-        <span className={`text-[10px] px-2 py-0.5 rounded border ${
-          isConv
-            ? "bg-blue-900/50 text-blue-300 border-blue-700"
-            : "bg-amber-900/50 text-amber-300 border-amber-700"
-        }`}>
-          {source.source_type}
-        </span>
-        <button
-          onClick={onEvaluate}
-          className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded transition-colors"
-        >
-          Evaluate
-        </button>
-      </div>
-    </div>
+      <span className="text-xs text-[#6b7280]">→</span>
+    </button>
   );
 }
 
@@ -82,22 +72,33 @@ export default function Home() {
             <p className="px-4 text-xs text-rose-400">{error}</p>
           )}
           {index?.users.map((user) => (
-            <button
+            <div
               key={user.ref_user_id}
-              onClick={() => setSelectedUser(user)}
-              className={`w-full text-left px-4 py-2.5 transition-colors ${
+              className={`flex items-center transition-colors ${
                 selectedUser?.ref_user_id === user.ref_user_id
-                  ? "bg-indigo-950/60 text-[#e8eaf0]"
-                  : "text-[#9ca3af] hover:bg-[#22263a] hover:text-[#e8eaf0]"
+                  ? "bg-indigo-950/60"
+                  : "hover:bg-[#22263a]"
               }`}
             >
-              <p className="text-sm font-medium truncate">
-                {user.screen_name ?? `User ${user.ref_user_id}`}
-              </p>
-              <p className="text-xs text-[#6b7280]">
-                {user.sources.length} source{user.sources.length !== 1 ? "s" : ""}
-              </p>
-            </button>
+              <button
+                onClick={() => setSelectedUser(user)}
+                className="flex-1 text-left px-4 py-2.5"
+              >
+                <p className={`text-sm font-medium truncate ${selectedUser?.ref_user_id === user.ref_user_id ? "text-[#e8eaf0]" : "text-[#9ca3af]"}`}>
+                  {user.screen_name ?? `User ${user.ref_user_id}`}
+                </p>
+                <p className="text-xs text-[#6b7280]">
+                  {user.sources.length} source{user.sources.length !== 1 ? "s" : ""}
+                </p>
+              </button>
+              <Link
+                href={`/beliefs/${user.ref_user_id}`}
+                className="mr-2 text-[10px] px-2 py-1 rounded border border-[#2e3350] text-[#6b7280] hover:text-indigo-400 hover:border-indigo-700 transition-colors"
+                title="View belief timeline"
+              >
+                timeline
+              </Link>
+            </div>
           ))}
         </div>
       </aside>
@@ -121,7 +122,7 @@ export default function Home() {
                 <SourceCard
                   key={s.id}
                   source={s}
-                  onEvaluate={() => handleEvaluate(s)}
+                  onClick={() => handleEvaluate(s)}
                 />
               ))}
             </div>

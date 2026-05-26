@@ -76,6 +76,7 @@ def build_response(
             belief_id=bid,
             belief_text=raw.belief_text,
             belief_type=raw.belief_type,
+            subject_tag=raw.subject_tag or "",
             self_domain=_str(raw.self_domain),
             polarity=_str(raw.polarity),
             temporal_scope=raw.temporal_scope,

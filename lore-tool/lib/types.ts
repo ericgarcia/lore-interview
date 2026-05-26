@@ -121,3 +121,48 @@ export interface UserEntry {
 export interface DataIndex {
   users: UserEntry[];
 }
+
+// Belief graph types (RFC 0003)
+
+export type RelationToPrior =
+  | "IDENTITY"
+  | "SUBSUMPTION"
+  | "CONTRACTION"
+  | "REVISION"
+  | "CONTRACTION_OR_REVISION"
+  | "ELABORATION"
+  | "EXPANSION";
+
+export interface BeliefEvent {
+  id: string;
+  canonical_id: string;
+  belief_text: string;
+  subject_tag: string;
+  self_domain: string;
+  polarity: string;
+  claim_commitment: number;
+  crystallization: number;
+  affective_charge: string | null;
+  belief_state: string;
+  depth_markers: string; // JSON array
+  source_turns: string; // JSON array
+  relation_to_prior: RelationToPrior | null;
+  related_to_canonical_id: string | null;
+  match_confidence: number | null;
+  relation_confidence: number | null;
+  relation_classifier_flags: string | null; // JSON object
+  valid_from: string;
+  valid_until: string | null;
+  recorded_at: string;
+}
+
+export interface BeliefLineage {
+  canonical_id: string;
+  current: BeliefEvent | null;
+  events: BeliefEvent[];
+}
+
+export interface UserBeliefsResponse {
+  user_id: string;
+  lineages: BeliefLineage[];
+}

@@ -59,13 +59,18 @@ export default function EvaluatePage() {
   const [activeDomain, setActiveDomain] = useState<SelfDomain | null>(null);
   const [selectedBelief, setSelectedBelief] = useState<BeliefObject | null>(null);
 
-  // Load source from sessionStorage
+  // Load source from sessionStorage, then try to restore cached result
   useEffect(() => {
     const raw = sessionStorage.getItem("lore:source");
     if (!raw) { router.replace("/"); return; }
     const s = JSON.parse(raw) as SourceSummary;
     if (s.id !== id) { router.replace("/"); return; }
     setSource(s);
+
+    fetch(`/api/evaluations/${id}?view=full`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setResult(data as EvaluationResponse); })
+      .catch(() => {});
   }, [id, router]);
 
   const runEvaluation = useCallback(async (s: SourceSummary, v: ViewMode) => {
@@ -91,15 +96,9 @@ export default function EvaluatePage() {
     }
   }, []);
 
-  // Auto-run on load
-  useEffect(() => {
-    if (source) runEvaluation(source, view);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source]);
-
   const handleViewChange = (v: ViewMode) => {
     setView(v);
-    if (source) runEvaluation(source, v);
+    if (source && result) runEvaluation(source, v);
   };
 
   const filteredBeliefs = result
@@ -133,13 +132,17 @@ export default function EvaluatePage() {
               Extracting… <Elapsed startedAt={startedAt} />
             </span>
           )}
-          <ViewSwitcher active={view} onChange={handleViewChange} />
+          {result && <ViewSwitcher active={view} onChange={handleViewChange} />}
           {source && !loading && (
             <button
               onClick={() => runEvaluation(source, view)}
-              className="text-xs bg-[#22263a] hover:bg-[#2e3350] border border-[#2e3350] text-[#9ca3af] hover:text-[#e8eaf0] px-3 py-1 rounded transition-colors"
+              className={`text-xs px-3 py-1 rounded transition-colors ${
+                result
+                  ? "bg-[#22263a] hover:bg-[#2e3350] border border-[#2e3350] text-[#9ca3af] hover:text-[#e8eaf0]"
+                  : "bg-indigo-600 hover:bg-indigo-500 text-white"
+              }`}
             >
-              Re-run
+              {result ? "Re-run" : "Evaluate"}
             </button>
           )}
         </div>
@@ -175,6 +178,13 @@ export default function EvaluatePage() {
           {error && (
             <div className="mb-3 rounded-lg border border-rose-700 bg-rose-950/40 px-3 py-2 text-xs text-rose-300">
               {error}
+            </div>
+          )}
+
+          {!loading && !result && !error && (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-[#6b7280]">
+              <p className="text-sm">Ready to evaluate</p>
+              <p className="text-xs">Click <span className="text-indigo-400">Evaluate</span> in the header to extract beliefs from this conversation.</p>
             </div>
           )}
 
