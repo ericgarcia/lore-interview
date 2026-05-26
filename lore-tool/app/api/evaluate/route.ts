@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { ConversationSummary, DiscussionSummary, ViewMode } from "@/lib/types";
+import type { ConversationSummary, DiscussionSummary } from "@/lib/types";
 
 const API_URL = process.env.API_URL ?? "http://localhost:8000";
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { source, view = "full" } = (await req.json()) as {
-    source: ConversationSummary | DiscussionSummary;
-    view: ViewMode;
-  };
-
-  let body: object;
-
+export function sourceToPipelineBody(source: ConversationSummary | DiscussionSummary): object {
   if (source.source_type === "conversation") {
     const s = source as ConversationSummary;
-    body = {
+    return {
       source_type: "conversation",
       ref_conversation_id: s.ref_conversation_id,
       ref_user_id: s.ref_user_id,
@@ -23,7 +16,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     };
   } else {
     const s = source as DiscussionSummary;
-    body = {
+    return {
       source_type: "discussion",
       post_id: s.post_id,
       ref_user_id: s.ref_user_id,
@@ -31,15 +24,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       turns: s.turns,
     };
   }
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { source } = (await req.json()) as {
+    source: ConversationSummary | DiscussionSummary;
+  };
+
+  const body = sourceToPipelineBody(source);
 
   try {
     const upstream = await fetch(
-      `${API_URL}/conversations/evaluate?view=${view}`,
+      `${API_URL}/conversations/evaluate`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         signal: AbortSignal.timeout(120_000),
       }
     );

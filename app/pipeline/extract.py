@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import baml_py.baml_py as _bp
-from baml_client.sync_client import b
+from baml_client.async_client import b as b_async
 from baml_client.types import ExtractedBelief, AffectiveCharge
 from app.pipeline.preprocess import TurnPair
 from app.pipeline.context import MetricsContext
@@ -18,7 +18,7 @@ def _to_baml_turn(t: TurnPair) -> BamlTurnPair:
     )
 
 
-def extract_from_chunk(
+async def extract_from_chunk(
     turns: list[TurnPair],
     source_type: str,
     ctx: MetricsContext | None = None,
@@ -26,7 +26,7 @@ def extract_from_chunk(
     baml_turns = [_to_baml_turn(t) for t in turns]
     collector = _bp.Collector("metrics") if ctx is not None else None
     baml_options = {"collector": collector} if collector is not None else {}
-    result = b.ExtractBeliefs(turns=baml_turns, source_type=source_type, baml_options=baml_options)
+    result = await b_async.ExtractBeliefs(turns=baml_turns, source_type=source_type, baml_options=baml_options)
 
     if ctx is not None and collector is not None:
         log = collector.last
@@ -40,12 +40,12 @@ def extract_from_chunk(
     return result.beliefs
 
 
-def extract_beliefs(
+async def extract_beliefs(
     chunks: list[list[TurnPair]],
     source_type: str,
     ctx: MetricsContext | None = None,
 ) -> list[ExtractedBelief]:
     beliefs: list[ExtractedBelief] = []
     for chunk in chunks:
-        beliefs.extend(extract_from_chunk(chunk, source_type, ctx))
+        beliefs.extend(await extract_from_chunk(chunk, source_type, ctx))
     return beliefs

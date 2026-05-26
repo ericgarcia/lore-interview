@@ -1,6 +1,8 @@
 from __future__ import annotations
+import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from typing import Literal
@@ -9,10 +11,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
-from app.models.input import EvaluationInput
+from app.models.input import EvaluationInput, ConversationInput, DiscussionInput
 from app.models.output import EvaluationResponse
+from app.models.batch import BatchItem, BatchRun, _runs
 from app.pipeline.preprocess import build_turn_pairs, chunk_turns
 from app.pipeline.extract import extract_beliefs
 from app.pipeline.verify import verify_beliefs
@@ -26,30 +30,16 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Lore Conversational Evaluation API", version="1.0")
 
-_STORYBOT_FIELDS = {
-    "belief_id", "belief_text", "belief_state", "self_domain",
-    "polarity", "claim_commitment", "crystallization", "affective_charge", "delta",
-}
-_RECOMMENDATION_FIELDS = {
-    "belief_id", "self_domain", "confidence",
-    "claim_commitment", "crystallization", "session_weight", "delta",
-}
+_sem: asyncio.Semaphore | None = None
 
 
-def _filter_view(data: dict, view: str) -> dict:
-    if view == "full":
-        return data
-    fields = _STORYBOT_FIELDS if view == "storybot" else _RECOMMENDATION_FIELDS
-    data = dict(data)
-    data["beliefs"] = [{k: v for k, v in b.items() if k in fields} for b in data.get("beliefs", [])]
-    return data
+@app.on_event("startup")
+async def _startup() -> None:
+    global _sem
+    _sem = asyncio.Semaphore(int(os.environ.get("BATCH_CONCURRENCY", "3")))
 
 
-def _apply_view(response: EvaluationResponse, view: str) -> dict:
-    return _filter_view(response.model_dump(), view)
-
-
-def _source_id(body) -> str:
+def _source_id(body: ConversationInput | DiscussionInput) -> str:
     if body.source_type == "conversation":
         return f"conv-{body.ref_conversation_id}-{body.ref_user_id}"
     return f"disc-{body.post_id}-{body.ref_user_id}"
@@ -60,13 +50,13 @@ def _ms(t0_ns: int) -> int:
 
 
 def _persist_rejected(source_id: str, evaluation_id: str, rejected: list[RejectedBelief]) -> None:
+    import uuid as _uuid
     now = datetime.now(timezone.utc).isoformat()
     conn = get_connection()
     try:
         with conn:
             conn.execute("DELETE FROM rejected_beliefs WHERE source_id = ?", (source_id,))
             for r in rejected:
-                import uuid as _uuid
                 conn.execute(
                     """INSERT INTO rejected_beliefs (
                         id, source_id, evaluation_id, rejection_reason,
@@ -91,19 +81,15 @@ def _persist_rejected(source_id: str, evaluation_id: str, rejected: list[Rejecte
         conn.close()
 
 
-@app.post("/conversations/evaluate")
-def evaluate(
-    body: EvaluationInput,
-    view: Literal["full", "storybot", "recommendation"] = "full",
-) -> JSONResponse:
+async def _run_pipeline(body: ConversationInput | DiscussionInput) -> dict:
+    """Run the full evaluation pipeline and return the cached full response dict."""
     total_t0 = time.monotonic_ns()
-
     ctx = MetricsContext(source_type=body.source_type, ref_user_id=body.ref_user_id)
 
     t0 = time.monotonic_ns()
     turns = build_turn_pairs(body)
     if not turns:
-        raise HTTPException(status_code=422, detail="No extractable user turns found.")
+        raise ValueError("No extractable user turns found.")
     chunks = chunk_turns(turns)
     ctx.preprocess_ms = _ms(t0)
     ctx.turn_count = len(turns)
@@ -111,14 +97,14 @@ def evaluate(
     ctx.viable = len(turns) >= VIABLE_THRESHOLD
 
     t0 = time.monotonic_ns()
-    raw = extract_beliefs(chunks, body.source_type, ctx)
+    raw = await extract_beliefs(chunks, body.source_type, ctx)
     ctx.extract_ms = _ms(t0)
     ctx.beliefs_extracted = len(raw)
 
     turn_text_map = {t.turn_index: t.user_response for t in turns}
 
     t0 = time.monotonic_ns()
-    verified, rejected = verify_beliefs(raw, turn_text_map)
+    verified, rejected = await verify_beliefs(raw, turn_text_map)
     ctx.verify_ms = _ms(t0)
     ctx.beliefs_verified = len(verified)
 
@@ -127,46 +113,163 @@ def evaluate(
     ctx.aggregate_ms = _ms(t0)
     ctx.beliefs_final = len(response.beliefs)
 
-    full_data = _apply_view(response, "full")
+    full_data = response.model_dump()
 
-    # Cache the full response so revisiting the conversation reloads results
+    sid = _source_id(body)
+
     try:
         init_db()
         _conn = get_connection()
         _conn.execute(
             "INSERT OR REPLACE INTO evaluation_cache (source_id, response_json, cached_at) VALUES (?, ?, ?)",
-            (_source_id(body), json.dumps(full_data), datetime.now(timezone.utc).isoformat()),
+            (sid, json.dumps(full_data), datetime.now(timezone.utc).isoformat()),
         )
         _conn.commit()
         _conn.close()
     except Exception:
-        logger.exception("Failed to cache evaluation for %s", _source_id(body))
+        logger.exception("Failed to cache evaluation for %s", sid)
 
-    # Write metrics and rejected beliefs before persist so failures don't lose them
     ctx.total_latency_ms = _ms(total_t0)
     try:
         init_db()
         write_metrics(ctx)
     except Exception:
-        logger.exception("Failed to write metrics for %s", _source_id(body))
+        logger.exception("Failed to write metrics for %s", sid)
 
     try:
-        _persist_rejected(_source_id(body), ctx.evaluation_id, rejected)
+        _persist_rejected(sid, ctx.evaluation_id, rejected)
     except Exception:
-        logger.exception("Failed to persist rejected beliefs for %s", _source_id(body))
+        logger.exception("Failed to persist rejected beliefs for %s", sid)
 
-    # Persist belief graph — failures are non-fatal so evaluation always returns
     t0 = time.monotonic_ns()
     try:
         session_ts = turns[0].transaction_datetime_utc if turns else None
         persist_beliefs(response.beliefs, str(body.ref_user_id), session_ts)
     except Exception:
         logger.exception("Failed to persist beliefs for user %s", body.ref_user_id)
-    # persist_ms recorded even if persist failed, for latency visibility
     ctx.persist_ms = _ms(t0)
 
-    return JSONResponse(content=_filter_view(full_data, view))
+    return full_data
 
+
+@app.post("/conversations/evaluate")
+async def evaluate(
+    body: EvaluationInput,
+    view: Literal["full", "storybot", "recommendation"] = "full",
+) -> JSONResponse:
+    try:
+        full_data = await _run_pipeline(body)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return JSONResponse(content=full_data)
+
+
+# ---------------------------------------------------------------------------
+# Batch evaluation
+# ---------------------------------------------------------------------------
+
+class BatchRequest(BaseModel):
+    sources: list[EvaluationInput]
+
+
+async def _run_batch_item(
+    body: ConversationInput | DiscussionInput,
+    item: BatchItem,
+    queue: asyncio.Queue,
+) -> None:
+    assert _sem is not None
+    async with _sem:
+        item.status = "running"
+        item.started_at = time.monotonic()
+        await queue.put({"source_id": item.source_id, "status": "running"})
+        try:
+            await _run_pipeline(body)
+            item.status = "done"
+            item.completed_at = time.monotonic()
+            await queue.put({"source_id": item.source_id, "status": "done"})
+        except Exception as e:
+            item.status = "error"
+            item.error = str(e)
+            item.completed_at = time.monotonic()
+            await queue.put({"source_id": item.source_id, "status": "error", "error": str(e)})
+
+
+@app.post("/batch/evaluate", status_code=202)
+async def batch_evaluate(req: BatchRequest) -> JSONResponse:
+    run = BatchRun()
+    _runs[run.batch_id] = run
+
+    tasks = []
+    for body in req.sources:
+        sid = _source_id(body)
+        item = BatchItem(source_id=sid)
+        run.items.append(item)
+        tasks.append(asyncio.create_task(_run_batch_item(body, item, run.queue)))
+
+    async def _finish_sentinel() -> None:
+        await asyncio.gather(*tasks, return_exceptions=True)
+        succeeded = sum(1 for i in run.items if i.status == "done")
+        failed = sum(1 for i in run.items if i.status == "error")
+        await run.queue.put({"done": True, "succeeded": succeeded, "failed": failed})
+
+    asyncio.create_task(_finish_sentinel())
+
+    return JSONResponse(
+        content={"batch_id": run.batch_id, "count": len(run.items)},
+        status_code=202,
+    )
+
+
+@app.get("/batch/{batch_id}/progress")
+async def batch_progress(batch_id: str) -> StreamingResponse:
+    run = _runs.get(batch_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Batch run not found")
+
+    async def _stream():
+        while True:
+            event = await run.queue.get()
+            yield f"data: {json.dumps(event)}\n\n"
+            if event.get("done"):
+                break
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.get("/batch/{batch_id}/status")
+async def batch_status(batch_id: str) -> JSONResponse:
+    run = _runs.get(batch_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Batch run not found")
+
+    counts: dict[str, int] = {"pending": 0, "running": 0, "done": 0, "error": 0}
+    for item in run.items:
+        counts[item.status] += 1
+
+    return JSONResponse(content={
+        "batch_id": run.batch_id,
+        "items": [
+            {
+                "source_id": i.source_id,
+                "status": i.status,
+                "started_at": i.started_at,
+                "completed_at": i.completed_at,
+                "error": i.error,
+            }
+            for i in run.items
+        ],
+        "total": len(run.items),
+        **counts,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Existing read endpoints (unchanged)
+# ---------------------------------------------------------------------------
 
 @app.get("/evaluations/{source_id}")
 def get_cached_evaluation(
@@ -190,8 +293,7 @@ def get_cached_evaluation(
     if row is None:
         raise HTTPException(status_code=404, detail="No cached evaluation found")
 
-    data = json.loads(row["response_json"])
-    return JSONResponse(content=_filter_view(data, view))
+    return JSONResponse(content=json.loads(row["response_json"]))
 
 
 @app.get("/evaluations/{source_id}/rejected")

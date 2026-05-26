@@ -261,3 +261,30 @@ export interface MetricsHistoryRow {
   nli_rejection_rate: number | null;
   viable: number | null;
 }
+
+// Batch evaluation types (RFC 0006)
+
+export type BatchStatus = "pending" | "running" | "done" | "error";
+
+export interface BatchItem {
+  source_id: string;
+  status: BatchStatus;
+  started_at: number | null;
+  completed_at: number | null;
+  error: string | null;
+}
+
+export interface BatchStatusResponse {
+  batch_id: string;
+  items: BatchItem[];
+  total: number;
+  pending: number;
+  running: number;
+  done: number;
+  error: number;
+}
+
+export interface BatchStartResponse {
+  batch_id: string;
+  count: number;
+}

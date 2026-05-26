@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 from dataclasses import dataclass
 import numpy as np
 from sentence_transformers import CrossEncoder
@@ -45,12 +46,23 @@ class RejectedBelief:
     nli_premise: str | None = None  # actual text the NLI scored against
 
 
-def verify_beliefs(
+def _score_candidates(
+    candidates: list[tuple[ExtractedBelief, str]],
+) -> list[tuple[ExtractedBelief, str, float]]:
+    """Run all NLI scoring in one batch — called from executor to avoid blocking."""
+    return [
+        (belief, evidence, _nli_score(evidence, belief.belief_text))
+        for belief, evidence in candidates
+    ]
+
+
+async def verify_beliefs(
     beliefs: list[ExtractedBelief],
     turn_text_map: dict[int, str] | None = None,
 ) -> tuple[list[tuple[ExtractedBelief, float]], list[RejectedBelief]]:
     verified: list[tuple[ExtractedBelief, float]] = []
     rejected: list[RejectedBelief] = []
+    candidates: list[tuple[ExtractedBelief, str]] = []
 
     for belief in beliefs:
         if not belief.evidence_spans:
@@ -62,20 +74,27 @@ def verify_beliefs(
 
         # Use the full user message(s) as the NLI premise so coreference and
         # context that the LLM had during extraction is available to the verifier.
-        # Falls back to evidence_spans if turn text isn't available.
         if turn_text_map and belief.source_turn_indices:
             full_turns = [turn_text_map[i] for i in belief.source_turn_indices if i in turn_text_map]
             evidence = " ".join(full_turns) if full_turns else " ".join(belief.evidence_spans)
         else:
             evidence = " ".join(belief.evidence_spans)
 
-        score = _nli_score(evidence, belief.belief_text)
-        threshold = DOMAIN_THRESHOLDS.get(belief.self_domain, 0.65)
+        candidates.append((belief, evidence))
 
-        if score < threshold:
-            rejected.append(RejectedBelief(belief, "nli_threshold", nli_score=round(score, 4), nli_threshold=threshold, nli_premise=evidence))
-            continue
-
-        verified.append((belief, score))
+    if candidates:
+        loop = asyncio.get_event_loop()
+        scored = await loop.run_in_executor(None, _score_candidates, candidates)
+        for belief, evidence, score in scored:
+            threshold = DOMAIN_THRESHOLDS.get(belief.self_domain, 0.65)
+            if score < threshold:
+                rejected.append(RejectedBelief(
+                    belief, "nli_threshold",
+                    nli_score=round(score, 4),
+                    nli_threshold=threshold,
+                    nli_premise=evidence,
+                ))
+            else:
+                verified.append((belief, score))
 
     return verified, rejected
