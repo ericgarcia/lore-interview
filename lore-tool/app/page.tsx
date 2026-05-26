@@ -66,22 +66,6 @@ export default function Home() {
           <p className="text-xs text-[#6b7280] mt-0.5">
             {index ? `${index.users.length} users` : "Loading data…"}
           </p>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-            {[
-              { href: "/metrics", label: "Metrics" },
-              { href: "/batch", label: "Batch" },
-              { href: "/proposals/categories", label: "Proposals" },
-              { href: "/schema", label: "Schema" },
-            ].map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className="text-xs text-[#6b7280] hover:text-indigo-400 transition-colors"
-              >
-                ↗ {label}
-              </Link>
-            ))}
-          </div>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           {error && (

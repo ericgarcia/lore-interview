@@ -23,6 +23,7 @@ const navLinks = [
   { href: "/metrics", label: "Metrics" },
   { href: "/batch", label: "Batch Evaluate" },
   { href: "/proposals/categories", label: "Category Proposals" },
+  { href: "/schema", label: "Schema" },
 ];
 
 export default function RootLayout({
