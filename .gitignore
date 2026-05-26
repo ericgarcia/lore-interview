@@ -12,6 +12,9 @@ venv/
 # Data and prep materials
 data/
 prep/
+# ...but not the Next.js API route that happens to be named "data"
+!lore-tool/app/api/data/
+!lore-tool/app/api/data/route.ts
 
 # Internal planning artifacts
 .blue/

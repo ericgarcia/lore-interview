@@ -183,6 +183,32 @@ CREATE TABLE IF NOT EXISTS category_adjacencies (
   PRIMARY KEY (category_id_a, category_id_b),
   CHECK (category_id_a < category_id_b)
 );
+
+CREATE TABLE IF NOT EXISTS conversation_turns (
+  ref_conversation_id       INTEGER NOT NULL,
+  conv_user_id              INTEGER NOT NULL,
+  turn_index                INTEGER NOT NULL,
+  author_ref_user_id        INTEGER NOT NULL,
+  screen_name               TEXT    NOT NULL,
+  message                   TEXT    NOT NULL,
+  transaction_datetime_utc  TEXT    NOT NULL,
+  PRIMARY KEY (ref_conversation_id, turn_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_conv_turns_user
+  ON conversation_turns (conv_user_id, ref_conversation_id);
+
+CREATE TABLE IF NOT EXISTS discussion_turns (
+  post_id              INTEGER NOT NULL,
+  comment_id           INTEGER NOT NULL,  -- -1 sentinel for the original post (NULL not storable in PK)
+  author_ref_user_id   INTEGER NOT NULL,
+  body                 TEXT    NOT NULL,
+  reported_or_removed  INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (post_id, comment_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_disc_turns_user
+  ON discussion_turns (author_ref_user_id, post_id);
 """
 
 

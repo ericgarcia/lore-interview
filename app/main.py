@@ -536,6 +536,150 @@ def get_metrics_history(limit: int = 50) -> JSONResponse:
     return JSONResponse(content=[dict(r) for r in rows])
 
 
+@app.get("/data")
+def get_data() -> JSONResponse:
+    try:
+        init_db()
+    except Exception:
+        logger.exception("Failed to initialize DB")
+
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """SELECT ref_conversation_id, conv_user_id, turn_index,
+                      author_ref_user_id, screen_name, message, transaction_datetime_utc
+               FROM conversation_turns
+               ORDER BY ref_conversation_id, turn_index"""
+        ).fetchall()
+    finally:
+        conn.close()
+
+    # Group turns by (ref_conversation_id, conv_user_id)
+    from collections import defaultdict
+    conv_turns: dict[tuple[int, int], list[dict]] = defaultdict(list)
+    for row in rows:
+        key = (row["ref_conversation_id"], row["conv_user_id"])
+        conv_turns[key].append({
+            "ref_conversation_id": row["ref_conversation_id"],
+            "ref_user_id": row["author_ref_user_id"],
+            "transaction_datetime_utc": row["transaction_datetime_utc"],
+            "screen_name": row["screen_name"],
+            "message": row["message"],
+        })
+
+    user_map: dict[int, dict] = {}
+    for (cid, uid), turns in conv_turns.items():
+        user_turns = [t for t in turns if t["ref_user_id"] == uid]
+        screen_name = user_turns[0]["screen_name"] if user_turns else f"User {uid}"
+
+        if uid not in user_map:
+            user_map[uid] = {"ref_user_id": uid, "screen_name": screen_name, "sources": []}
+
+        user_map[uid]["sources"].append({
+            "id": f"conv-{cid}-{uid}",
+            "source_type": "conversation",
+            "ref_conversation_id": cid,
+            "ref_user_id": uid,
+            "screen_name": screen_name,
+            "turn_count": len(turns),
+            "first_turn_at": turns[0]["transaction_datetime_utc"],
+            "turns": turns,
+        })
+
+    users = sorted(user_map.values(), key=lambda u: u["ref_user_id"])
+    return JSONResponse(content={"users": users})
+
+
+@app.get("/users/{user_id}/simulation-context")
+def get_simulation_context(user_id: str) -> JSONResponse:
+    try:
+        init_db()
+    except Exception:
+        logger.exception("Failed to initialize DB")
+
+    conn = get_connection()
+    try:
+        # Screen name from conversation turns
+        name_row = conn.execute(
+            """SELECT screen_name FROM conversation_turns
+               WHERE conv_user_id = ? AND author_ref_user_id = ?
+               LIMIT 1""",
+            (user_id, user_id),
+        ).fetchone()
+        screen_name = name_row["screen_name"] if name_row else f"User {user_id}"
+
+        # Current beliefs
+        belief_rows = conn.execute(
+            """SELECT cb.canonical_id, cb.belief_text, cb.self_domain, cb.polarity,
+                      cb.claim_commitment, cb.crystallization, cb.affective_charge,
+                      cb.belief_state, cb.valid_from
+               FROM current_beliefs cb
+               JOIN belief_identities bi ON bi.id = cb.canonical_id
+               WHERE bi.user_id = ?
+               ORDER BY cb.claim_commitment DESC""",
+            (user_id,),
+        ).fetchall()
+
+        # Belief categories with member counts
+        cat_rows = conn.execute(
+            """SELECT bc.label, COUNT(bcm.canonical_id) as belief_count
+               FROM belief_categories bc
+               LEFT JOIN belief_category_memberships bcm ON bcm.category_id = bc.id
+               WHERE bc.user_id = ?
+               GROUP BY bc.id
+               ORDER BY belief_count DESC""",
+            (user_id,),
+        ).fetchall()
+
+        # Prior conversations: metadata + full turns
+        conv_rows = conn.execute(
+            """SELECT ref_conversation_id, MIN(transaction_datetime_utc) as date,
+                      COUNT(*) as turn_count
+               FROM conversation_turns
+               WHERE conv_user_id = ?
+               GROUP BY ref_conversation_id
+               ORDER BY date""",
+            (user_id,),
+        ).fetchall()
+
+        conversations = []
+        for conv_row in conv_rows:
+            cid = conv_row["ref_conversation_id"]
+            turn_rows = conn.execute(
+                """SELECT author_ref_user_id, screen_name, message, transaction_datetime_utc
+                   FROM conversation_turns
+                   WHERE ref_conversation_id = ?
+                   ORDER BY turn_index""",
+                (cid,),
+            ).fetchall()
+            turns = [
+                {
+                    "role": "user" if t["author_ref_user_id"] != 1 else "storybot",
+                    "screen_name": t["screen_name"],
+                    "message": t["message"],
+                    "timestamp": t["transaction_datetime_utc"],
+                }
+                for t in turn_rows
+            ]
+            conversations.append({
+                "ref_conversation_id": cid,
+                "date": conv_row["date"][:10],
+                "turn_count": conv_row["turn_count"],
+                "turns": turns,
+            })
+
+    finally:
+        conn.close()
+
+    return JSONResponse(content={
+        "user_id": user_id,
+        "screen_name": screen_name,
+        "beliefs": [dict(r) for r in belief_rows],
+        "categories": [{"label": r["label"], "belief_count": r["belief_count"]} for r in cat_rows],
+        "conversations": conversations,
+    })
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
