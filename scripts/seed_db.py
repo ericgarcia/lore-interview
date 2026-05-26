@@ -21,22 +21,28 @@ load_dotenv()
 
 from app.db.schema import init_db, get_connection
 
-CONV_FILES = ["conversations.json", "conversations2.json"]
 DISC_FILES = ["discussions.json"]
 
 # Sentinel stored in DB for discussion_turns where comment_id IS NULL (original post).
 _NULL_COMMENT_SENTINEL = -1
 
 
+def _conversation_files(data_dir: str) -> list[str]:
+    """Return all conversation JSON files: fixed names + any simulated_*.json files."""
+    fixed = ["conversations.json", "conversations2.json"]
+    import glob
+    simulated = sorted(glob.glob(os.path.join(data_dir, "simulated_*.json")))
+    return [os.path.join(data_dir, f) for f in fixed] + simulated
+
+
 def seed_conversations(conn, data_dir: str) -> int:
     count = 0
-    for filename in CONV_FILES:
-        filepath = os.path.join(data_dir, filename)
+    for filepath in _conversation_files(data_dir):
         if not os.path.exists(filepath):
             continue
         with open(filepath) as f:
             convs = json.load(f)
-        for conv in convs:
+        for conv in (convs if isinstance(convs, list) else [convs]):
             cid = conv["ref_conversation_id"]
             uid = conv["ref_user_id"]
             for idx, msg in enumerate(conv["messages_list"]):
