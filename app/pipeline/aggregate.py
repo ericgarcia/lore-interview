@@ -7,6 +7,7 @@ from app.models.output import (
 )
 from baml_client.types import ExtractedBelief
 from app.pipeline.preprocess import TurnPair
+from app.pipeline.context import MetricsContext
 
 VIABLE_THRESHOLD = 8
 SELF_DOMAINS = ("identity", "capability", "value", "relational", "aspirational")
@@ -61,6 +62,7 @@ def build_response(
     verified: list[tuple[ExtractedBelief, float]],
     request: ConversationInput | DiscussionInput,
     turns: list[TurnPair],
+    ctx: MetricsContext | None = None,
 ) -> EvaluationResponse:
     turn_count = len(turns)
     viable = turn_count >= VIABLE_THRESHOLD
@@ -70,8 +72,12 @@ def build_response(
     prior_ids = set(request.prior_belief_ids)
     turn_map = {t.turn_index: t for t in turns}
 
+    deduplicated = _deduplicate(verified, request.ref_user_id)
+    if ctx is not None:
+        ctx.beliefs_deduplicated = len(deduplicated)
+
     beliefs: list[BeliefObject] = []
-    for raw, nli_score, bid in _deduplicate(verified, request.ref_user_id):
+    for raw, nli_score, bid in deduplicated:
         beliefs.append(BeliefObject(
             belief_id=bid,
             belief_text=raw.belief_text,
@@ -92,6 +98,22 @@ def build_response(
             evidence_span=raw.evidence_spans[0] if raw.evidence_spans else raw.belief_text,
             depth_markers=raw.depth_markers,
         ))
+
+    if ctx is not None:
+        for b in beliefs:
+            ctx.nli_confidence_values.append(b.nli_confidence)
+            ctx.claim_commitment_values.append(b.claim_commitment)
+            ctx.crystallization_values.append(b.crystallization)
+            ctx.beliefs_by_domain[b.self_domain] = ctx.beliefs_by_domain.get(b.self_domain, 0) + 1
+            ctx.beliefs_by_polarity[b.polarity] = ctx.beliefs_by_polarity.get(b.polarity, 0) + 1
+            charge = b.affective_charge or "null"
+            ctx.beliefs_by_affective_charge[charge] = ctx.beliefs_by_affective_charge.get(charge, 0) + 1
+            ctx.beliefs_by_delta[b.delta] = ctx.beliefs_by_delta.get(b.delta, 0) + 1
+            ctx.beliefs_by_state[b.belief_state] = ctx.beliefs_by_state.get(b.belief_state, 0) + 1
+            if b.belief_type == "explicit":
+                ctx.explicit_belief_count += 1
+            else:
+                ctx.implicit_belief_count += 1
 
     domain_counts: dict[str, int] = {d: 0 for d in SELF_DOMAINS}
     domain_commitment: dict[str, list[float]] = {d: [] for d in SELF_DOMAINS}

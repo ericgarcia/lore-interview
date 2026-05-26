@@ -6,32 +6,121 @@ import type {
   EvaluationResponse,
   SourceSummary,
   SelfDomain,
-  ViewMode,
   BeliefObject,
+  RejectedBelief,
+  RejectedBeliefResponse,
 } from "@/lib/types";
 import { SignalSummary } from "@/components/SignalSummary";
 import { DomainRadar } from "@/components/DomainRadar";
 import { BeliefCard } from "@/components/BeliefCard";
 import { TurnViewer } from "@/components/TurnViewer";
 
-const VIEWS: ViewMode[] = ["full", "storybot", "recommendation"];
+const REASON_LABEL: Record<string, { label: string; color: string }> = {
+  nli_threshold: { label: "NLI threshold", color: "text-rose-400 bg-rose-950/50 border-rose-800" },
+  low_commitment: { label: "low commitment", color: "text-amber-400 bg-amber-950/50 border-amber-800" },
+  no_evidence: { label: "no evidence", color: "text-[#6b7280] bg-[#1a1d27] border-[#2e3350]" },
+};
 
-function ViewSwitcher({ active, onChange }: { active: ViewMode; onChange: (v: ViewMode) => void }) {
+function NliBar({ score, threshold }: { score: number; threshold: number }) {
+  const pct = Math.round(score * 100);
+  const threshPct = Math.round(threshold * 100);
   return (
-    <div className="flex gap-1 p-0.5 rounded-lg bg-[#22263a] border border-[#2e3350]">
-      {VIEWS.map((v) => (
-        <button
-          key={v}
-          onClick={() => onChange(v)}
-          className={`text-xs px-3 py-1 rounded transition-colors ${
-            active === v
-              ? "bg-indigo-600 text-white"
-              : "text-[#6b7280] hover:text-[#e8eaf0]"
-          }`}
-        >
-          {v}
-        </button>
-      ))}
+    <div className="mt-2">
+      <div className="flex justify-between text-[10px] text-[#6b7280] mb-0.5">
+        <span>NLI score: <span className="text-rose-400 font-mono">{score.toFixed(3)}</span></span>
+        <span>threshold: <span className="text-[#9ca3af] font-mono">{threshold.toFixed(2)}</span></span>
+      </div>
+      <div className="relative h-1.5 w-full rounded-full bg-[#22263a]">
+        <div
+          className="absolute left-0 top-0 h-full rounded-full bg-rose-600"
+          style={{ width: `${pct}%` }}
+        />
+        <div
+          className="absolute top-[-2px] h-[10px] w-px bg-[#9ca3af]"
+          style={{ left: `${threshPct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RejectedCard({ r }: { r: RejectedBelief }) {
+  const meta = REASON_LABEL[r.rejection_reason] ?? { label: r.rejection_reason, color: "text-[#6b7280] bg-[#1a1d27] border-[#2e3350]" };
+  return (
+    <div className="rounded-lg border border-[#2e3350] bg-[#13151f] px-3 py-2.5 space-y-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-[#e8eaf0] leading-snug flex-1">{r.belief_text}</p>
+        <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded border font-medium ${meta.color}`}>
+          {meta.label}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2 text-[10px] text-[#6b7280]">
+        <span>{r.self_domain}</span>
+        <span>·</span>
+        <span>commit {r.claim_commitment.toFixed(2)}</span>
+        <span>·</span>
+        <span>{r.belief_type}</span>
+        {r.subject_tag && <><span>·</span><span>{r.subject_tag}</span></>}
+      </div>
+      {r.evidence_spans.length > 0 && (
+        <p className="text-[11px] text-[#9ca3af] italic border-l-2 border-[#2e3350] pl-2 leading-snug">
+          &ldquo;{r.evidence_spans[0]}&rdquo;
+        </p>
+      )}
+      {r.rejection_reason === "nli_threshold" && r.nli_score != null && r.nli_threshold != null && (
+        <>
+          {r.nli_premise && r.nli_premise !== r.evidence_spans[0] && (
+            <div className="mt-1.5">
+              <p className="text-[10px] text-[#6b7280] mb-0.5">NLI scored against full turn:</p>
+              <p className="text-[11px] text-[#9ca3af] border-l-2 border-indigo-800 pl-2 leading-snug">
+                {r.nli_premise}
+              </p>
+            </div>
+          )}
+          <NliBar score={r.nli_score} threshold={r.nli_threshold} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function RejectedSection({ rejected }: { rejected: RejectedBelief[] }) {
+  const [open, setOpen] = useState(false);
+  if (rejected.length === 0) return null;
+
+  const byReason = rejected.reduce<Record<string, number>>((acc, r) => {
+    acc[r.rejection_reason] = (acc[r.rejection_reason] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className="mt-4 border border-[#2e3350] rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-[#1a1d27] hover:bg-[#22263a] transition-colors text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-[#9ca3af]">
+            NLI Rejected ({rejected.length})
+          </span>
+          <div className="flex gap-1.5">
+            {Object.entries(byReason).map(([reason, count]) => {
+              const meta = REASON_LABEL[reason];
+              return (
+                <span key={reason} className={`text-[10px] px-1.5 py-0.5 rounded border ${meta?.color ?? "text-[#6b7280] border-[#2e3350]"}`}>
+                  {count} {meta?.label ?? reason}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        <span className="text-[10px] text-[#6b7280]">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="p-3 space-y-2 bg-[#13151f]">
+          {rejected.map((r) => <RejectedCard key={r.id} r={r} />)}
+        </div>
+      )}
     </div>
   );
 }
@@ -55,11 +144,10 @@ export default function EvaluatePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [view, setView] = useState<ViewMode>("full");
   const [activeDomain, setActiveDomain] = useState<SelfDomain | null>(null);
   const [selectedBelief, setSelectedBelief] = useState<BeliefObject | null>(null);
+  const [rejected, setRejected] = useState<RejectedBelief[]>([]);
 
-  // Load source from sessionStorage, then try to restore cached result
   useEffect(() => {
     const raw = sessionStorage.getItem("lore:source");
     if (!raw) { router.replace("/"); return; }
@@ -67,13 +155,18 @@ export default function EvaluatePage() {
     if (s.id !== id) { router.replace("/"); return; }
     setSource(s);
 
-    fetch(`/api/evaluations/${id}?view=full`)
+    fetch(`/api/evaluations/${id}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setResult(data as EvaluationResponse); })
       .catch(() => {});
+
+    fetch(`/api/evaluations/${id}/rejected`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setRejected((data as RejectedBeliefResponse).rejected); })
+      .catch(() => {});
   }, [id, router]);
 
-  const runEvaluation = useCallback(async (s: SourceSummary, v: ViewMode) => {
+  const runEvaluation = useCallback(async (s: SourceSummary) => {
     setLoading(true);
     setResult(null);
     setError(null);
@@ -83,23 +176,23 @@ export default function EvaluatePage() {
       const res = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: s, view: v }),
+        body: JSON.stringify({ source: s }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail ?? data.error ?? "Unknown error");
       setResult(data as EvaluationResponse);
+
+      fetch(`/api/evaluations/${id}/rejected`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d) setRejected((d as RejectedBeliefResponse).rejected); })
+        .catch(() => {});
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
       setStartedAt(null);
     }
-  }, []);
-
-  const handleViewChange = (v: ViewMode) => {
-    setView(v);
-    if (source && result) runEvaluation(source, v);
-  };
+  }, [id]);
 
   const filteredBeliefs = result
     ? activeDomain
@@ -132,10 +225,9 @@ export default function EvaluatePage() {
               Extracting… <Elapsed startedAt={startedAt} />
             </span>
           )}
-          {result && <ViewSwitcher active={view} onChange={handleViewChange} />}
           {source && !loading && (
             <button
-              onClick={() => runEvaluation(source, view)}
+              onClick={() => runEvaluation(source)}
               className={`text-xs px-3 py-1 rounded transition-colors ${
                 result
                   ? "bg-[#22263a] hover:bg-[#2e3350] border border-[#2e3350] text-[#9ca3af] hover:text-[#e8eaf0]"
@@ -207,7 +299,6 @@ export default function EvaluatePage() {
                 <BeliefCard
                   key={b.belief_id}
                   belief={b}
-                  view={view}
                   highlighted={selectedBelief?.belief_id === b.belief_id}
                   onClick={() =>
                     setSelectedBelief(selectedBelief?.belief_id === b.belief_id ? null : b)
@@ -215,6 +306,10 @@ export default function EvaluatePage() {
                 />
               ))}
             </div>
+          )}
+
+          {!loading && result && !activeDomain && (
+            <RejectedSection rejected={rejected} />
           )}
         </section>
 

@@ -6,7 +6,6 @@ export type AffectiveCharge = "distress" | "defiant" | "resigned" | "neutral" | 
 export type BeliefState = "crystallized" | "transitioning";
 export type Delta = "new" | "reinforced" | "contradicted" | "unchanged";
 export type SourceType = "conversation" | "discussion";
-export type ViewMode = "full" | "storybot" | "recommendation";
 
 export interface SourceEvidence {
   ref_conversation_id: number | null;
