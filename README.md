@@ -126,7 +126,7 @@ curl -X POST http://localhost:8000/conversations/evaluate \
         "ref_user_id": 66,
         "transaction_datetime_utc": "2023-10-01T08:05:00Z",
         "screen_name": "EagerExplorer",
-        "message": "I've been training for a half marathon. Running is just who I am."
+        "message": "Ive been training for a half marathon. Running is just who I am."
       }
     ]
   }'
