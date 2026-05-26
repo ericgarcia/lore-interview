@@ -23,6 +23,4 @@ prep/
 baml_client/
 
 # Runtime data
-lore.db
-lore_vectors/
 .playwright-mcp/
