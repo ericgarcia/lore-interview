@@ -58,7 +58,7 @@ export default function Home() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-1 overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r border-[#2e3350] bg-[#1a1d27] flex flex-col">
         <div className="px-4 py-4 border-b border-[#2e3350]">
@@ -66,20 +66,6 @@ export default function Home() {
           <p className="text-xs text-[#6b7280] mt-0.5">
             {index ? `${index.users.length} users` : "Loading data…"}
           </p>
-          <div className="mt-2 flex items-center gap-3">
-            <Link
-              href="/metrics"
-              className="inline-flex items-center gap-1 text-xs text-[#6b7280] hover:text-indigo-400 transition-colors"
-            >
-              ↗ Metrics
-            </Link>
-            <Link
-              href="/batch"
-              className="inline-flex items-center gap-1 text-xs text-[#6b7280] hover:text-indigo-400 transition-colors"
-            >
-              ↗ Batch Evaluate
-            </Link>
-          </div>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           {error && (

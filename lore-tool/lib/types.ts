@@ -262,6 +262,35 @@ export interface MetricsHistoryRow {
   viable: number | null;
 }
 
+// Category consolidation proposal types (RFC 0008)
+
+export interface ProposedCategory {
+  category_id: string;
+  user_id: string;
+  current_label: string;
+  proposed_label: string;
+}
+
+export interface ProposedSubgroup {
+  label: string;
+  categories: ProposedCategory[];
+}
+
+export interface ProposedGroup {
+  label: string;
+  subgroups?: ProposedSubgroup[];
+  categories?: ProposedCategory[];
+}
+
+export interface CategoryProposal {
+  proposed_at: string;
+  model: string;
+  user_count: number;
+  current_category_count: number;
+  proposed_group_count: number;
+  groups: ProposedGroup[];
+}
+
 // Batch evaluation types (RFC 0006)
 
 export type BatchStatus = "pending" | "running" | "done" | "error";

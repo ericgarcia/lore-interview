@@ -54,8 +54,15 @@ Steps:
 4. Write the generated JSON to a file:
    `data/simulated_<user_id>_<YYYYMMDD_HHMMSS>.json`
 
-5. Print a summary:
+5. Import the conversation into the database:
+   ```
+   python scripts/seed_db.py
+   ```
+   Confirm the seeded turn count increased.
+
+6. Print a summary:
    - File path written
+   - Seeded turn count from the import
    - Belief themes the conversation touches on
    - Any new developments or belief shifts introduced
-   - Suggested next step: run `python scripts/seed_db.py` to ingest the new file, then use the Batch Evaluate page to extract beliefs
+   - Suggested next step: use the Batch Evaluate page to extract beliefs from the new conversation

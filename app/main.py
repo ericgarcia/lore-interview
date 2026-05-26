@@ -680,6 +680,70 @@ def get_simulation_context(user_id: str) -> JSONResponse:
     })
 
 
+@app.get("/beliefs/categories/export")
+def export_all_belief_categories() -> JSONResponse:
+    try:
+        init_db()
+    except Exception:
+        logger.exception("Failed to initialize DB")
+
+    conn = get_connection()
+    try:
+        cat_rows = conn.execute(
+            "SELECT id, user_id, label FROM belief_categories ORDER BY user_id, label",
+        ).fetchall()
+
+        user_ids = set()
+        categories = []
+        for cat in cat_rows:
+            cat_id = cat["id"]
+            user_ids.add(cat["user_id"])
+
+            belief_rows = conn.execute(
+                """
+                SELECT cb.belief_text
+                FROM belief_category_memberships bcm
+                JOIN current_beliefs cb ON cb.canonical_id = bcm.canonical_id
+                WHERE bcm.category_id = ?
+                ORDER BY cb.valid_from ASC
+                """,
+                (cat_id,),
+            ).fetchall()
+
+            categories.append({
+                "category_id": cat_id,
+                "user_id": cat["user_id"],
+                "label": cat["label"],
+                "belief_count": len(belief_rows),
+                "sample_beliefs": [r["belief_text"] for r in belief_rows[:3]],
+            })
+    finally:
+        conn.close()
+
+    return JSONResponse(content={
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "user_count": len(user_ids),
+        "category_count": len(categories),
+        "categories": categories,
+    })
+
+
+PROPOSALS_DIR = os.environ.get("PROPOSALS_DIR", "proposals")
+
+
+@app.get("/proposals/categories")
+def get_category_proposal() -> JSONResponse:
+    path = os.path.join(PROPOSALS_DIR, "categories-global.json")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="No global proposal found")
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read proposal: {e}")
+    return JSONResponse(content=data)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}

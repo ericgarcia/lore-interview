@@ -1,0 +1,216 @@
+{
+  "proposed_at": "2026-05-26T15:57:30+00:00",
+  "model": "claude-sonnet-4-6",
+  "user_count": 19,
+  "current_category_count": 87,
+  "proposed_group_count": 7,
+  "groups": [
+    {
+      "label": "Physical Activity & Fitness",
+      "subgroups": [
+        {
+          "label": "Running & Movement",
+          "categories": [
+            { "category_id": "ef68b824-9ced-4122-b6d8-c7662030ed8a", "user_id": "141", "current_label": "specific running goal", "proposed_label": "Running Goals" },
+            { "category_id": "c38b9d44-b1b0-4d3f-a05a-bddeed2f19fe", "user_id": "228", "current_label": "running goals, physical fitness", "proposed_label": "Running Goals" },
+            { "category_id": "96a7c25a-8f07-48be-a834-704bb23fda2b", "user_id": "228", "current_label": "running habits, social interaction preferences", "proposed_label": "Running Habits" },
+            { "category_id": "18cc154a-1c3c-4a2a-838d-4a77ba253f77", "user_id": "7", "current_label": "physical activity, past enjoyment", "proposed_label": "Running: Past Identity" },
+            { "category_id": "32936603-3b53-47a0-aa8a-21b5b2ffc3f0", "user_id": "7", "current_label": "physical activity, running", "proposed_label": "Running Goals" },
+            { "category_id": "5302175e-a792-46d7-8840-4823ab5d868d", "user_id": "774", "current_label": "physical activity, fitness goal", "proposed_label": "Fitness Goals" },
+            { "category_id": "b96b485b-d963-45c5-a252-eff37de67983", "user_id": "322", "current_label": "physical activity enjoyment", "proposed_label": "Physical Activity Enjoyment" },
+            { "category_id": "bd063504-d38a-4330-b147-c9a89e4a8c1c", "user_id": "439", "current_label": "physical activity", "proposed_label": "Physical Activity" },
+            { "category_id": "cdfb1a73-667e-4ecc-84d2-74a90df06b56", "user_id": "66", "current_label": "physical activity, fitness", "proposed_label": "Physical Activity & Fitness" }
+          ]
+        },
+        {
+          "label": "Fitness Identity & Lifestyle",
+          "categories": [
+            { "category_id": "a6633113-99ee-400d-b23e-fd4138051318", "user_id": "110", "current_label": "fitness identity", "proposed_label": "Fitness Identity" },
+            { "category_id": "bcc5f699-822c-4687-a7d2-72186c2e7fda", "user_id": "110", "current_label": "fitness lifestyle", "proposed_label": "Fitness Lifestyle" },
+            { "category_id": "f7cf6d5f-a7b0-40c9-acf3-398a3a4b67ee", "user_id": "439", "current_label": "health prioritization", "proposed_label": "Health Prioritization" },
+            { "category_id": "238e2cfb-4061-4e86-9866-a91d441ed1de", "user_id": "870", "current_label": "personal health, fitness", "proposed_label": "Personal Health & Fitness" },
+            { "category_id": "dcf82fb2-6cef-4474-9df6-317cccee8923", "user_id": "294", "current_label": "physical strength", "proposed_label": "Physical Strength" },
+            { "category_id": "1c1284c9-2176-42ef-bdf0-ea7393e8b05b", "user_id": "322", "current_label": "physical coordination", "proposed_label": "Physical Coordination" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Health & Body",
+      "subgroups": [
+        {
+          "label": "Diet & Nutrition",
+          "categories": [
+            { "category_id": "644a6960-6ac4-4034-a084-4901efbef6f8", "user_id": "66", "current_label": "diet and nutrition", "proposed_label": "Diet & Nutrition" },
+            { "category_id": "6ca15cfd-ce7d-42ae-b25a-d381ea409075", "user_id": "141", "current_label": "diet and nutrition aspiration", "proposed_label": "Diet & Nutrition Aspiration" }
+          ]
+        },
+        {
+          "label": "Body & Physical Limits",
+          "categories": [
+            { "category_id": "a44aa1b7-e92d-4cd4-8971-6f0eed9775f4", "user_id": "66", "current_label": "body image and limits", "proposed_label": "Body Image & Limits" },
+            { "category_id": "38c54b30-b495-4ca9-9245-12087d4d9e12", "user_id": "774", "current_label": "aging, body image and limits, emotional regulation", "proposed_label": "Aging & Body Image" },
+            { "category_id": "ef5d8eca-12d6-4ffa-98cc-ec2bd28fd5f3", "user_id": "774", "current_label": "physical balance, body limits", "proposed_label": "Physical Balance & Limits" },
+            { "category_id": "f5bb1a8d-6ad1-4d36-9bb8-bb15d833e901", "user_id": "328", "current_label": "energy levels", "proposed_label": "Energy Levels" },
+            { "category_id": "e6b1497b-57b9-4da2-8724-0bb89c0f44a8", "user_id": "141", "current_label": "chronotype preference", "proposed_label": "Chronotype Preference" },
+            { "category_id": "216db578-cf00-4032-835f-3409bb24d5b9", "user_id": "876", "current_label": "sleep quality, sleep patterns", "proposed_label": "Sleep Quality" }
+          ]
+        },
+        {
+          "label": "Holistic Health Management",
+          "categories": [
+            { "category_id": "f618bc9b-1e28-41ae-a9a9-513d7248f83f", "user_id": "166", "current_label": "holistic well-being", "proposed_label": "Holistic Well-Being" },
+            { "category_id": "669a116b-ca1a-429f-8698-4d0258698b6d", "user_id": "66", "current_label": "health management, continuous improvement, self-care", "proposed_label": "Health Management" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Mental Health & Emotional Life",
+      "subgroups": [
+        {
+          "label": "Emotional Regulation",
+          "categories": [
+            { "category_id": "25b498b8-4b2d-4743-aefe-0b28e8890293", "user_id": "141", "current_label": "emotional regulation", "proposed_label": "Emotional Regulation" },
+            { "category_id": "c7a037a7-68d7-4200-9d4a-89a4a3c08f23", "user_id": "66", "current_label": "emotional regulation", "proposed_label": "Emotional Regulation" },
+            { "category_id": "5730e919-22e2-4ed3-9d64-fa0cfe70fb32", "user_id": "294", "current_label": "emotional regulation", "proposed_label": "Emotional Regulation" },
+            { "category_id": "beef2716-13c6-4d18-b0ea-58d888aaabb9", "user_id": "328", "current_label": "habit breaking", "proposed_label": "Breaking Negative Cycles" },
+            { "category_id": "45c073d9-97c8-4b9f-a06e-bc671130dd00", "user_id": "346", "current_label": "mental well-being through exercise", "proposed_label": "Mental Well-Being Through Exercise" },
+            { "category_id": "f642faa8-529a-4411-afa8-e47059719efe", "user_id": "166", "current_label": "mental clarity & self-awareness", "proposed_label": "Mental Clarity & Self-Awareness" }
+          ]
+        },
+        {
+          "label": "Mental Health Struggles",
+          "categories": [
+            { "category_id": "e35168e0-cd23-4205-ab60-31dbedc4dcb6", "user_id": "774", "current_label": "emotional burden, health anxiety", "proposed_label": "Health Anxiety" },
+            { "category_id": "f536f247-b9a7-45fe-81ba-b1a2cb98a19c", "user_id": "774", "current_label": "helplessness, treatment effectiveness", "proposed_label": "Helplessness & Treatment" },
+            { "category_id": "90cb81e6-62af-4de7-8afc-88bd5e057d4f", "user_id": "648", "current_label": "anxiety management", "proposed_label": "Anxiety Management" },
+            { "category_id": "77c40a98-6fbd-4093-9695-9e0152a9864c", "user_id": "905", "current_label": "personal agency, control over health, uncertainty", "proposed_label": "Health & Sense of Control" },
+            { "category_id": "492b032f-3155-413a-80ea-35297b827285", "user_id": "774", "current_label": "emotional well-being, quality of life", "proposed_label": "Emotional Well-Being" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Personal Growth & Identity",
+      "subgroups": [
+        {
+          "label": "Self-Identity & Values",
+          "categories": [
+            { "category_id": "080eb9d3-a930-4818-baa2-4c4903b3a018", "user_id": "141", "current_label": "self-identity alignment", "proposed_label": "Self-Identity Alignment" },
+            { "category_id": "9a050ee0-77b0-4398-beca-24abefaf1147", "user_id": "166", "current_label": "self-confidence & readiness", "proposed_label": "Self-Confidence & Readiness" },
+            { "category_id": "cf843810-fe3b-4e41-920d-489c759893c6", "user_id": "66", "current_label": "personal growth", "proposed_label": "Personal Growth" },
+            { "category_id": "a92b4e66-35da-406d-9fdc-a5d269fa5fc1", "user_id": "66", "current_label": "personal values", "proposed_label": "Personal Values" },
+            { "category_id": "5f1dadda-f294-4a70-8c10-4a22cfa05ec4", "user_id": "66", "current_label": "self-awareness", "proposed_label": "Self-Awareness" },
+            { "category_id": "1bf8148e-5385-4b14-973a-63765ce17420", "user_id": "110", "current_label": "self-trust", "proposed_label": "Self-Trust" },
+            { "category_id": "96c42d2b-fef7-4cdd-abe5-ae6ce2c9afcd", "user_id": "774", "current_label": "self-sufficiency, aging, vulnerability", "proposed_label": "Self-Sufficiency" }
+          ]
+        },
+        {
+          "label": "Growth Mindset & Resilience",
+          "categories": [
+            { "category_id": "c1cdd2c4-89e8-458c-9419-43ede40e406c", "user_id": "110", "current_label": "commitment to perseverance", "proposed_label": "Commitment to Perseverance" },
+            { "category_id": "25c9870c-1334-4240-b6a7-fc4f47283ab5", "user_id": "110", "current_label": "fear of failure", "proposed_label": "Fear of Failure" },
+            { "category_id": "4f6996d7-4480-402e-a026-938cdce4bd03", "user_id": "110", "current_label": "motivation by progress", "proposed_label": "Motivation by Progress" },
+            { "category_id": "15ce04fa-776a-471c-b4b7-686dd79d26b3", "user_id": "110", "current_label": "personal accountability", "proposed_label": "Personal Accountability" },
+            { "category_id": "52c7e7f1-0da8-4252-ab86-c0c65a26fa3b", "user_id": "110", "current_label": "personal consistency", "proposed_label": "Personal Consistency" },
+            { "category_id": "08202f43-f812-4f14-9dc2-250c530d20ad", "user_id": "110", "current_label": "valuing challenges", "proposed_label": "Valuing Challenges" },
+            { "category_id": "74b8bbac-2865-4843-9f72-17491d72c64e", "user_id": "294", "current_label": "self-improvement", "proposed_label": "Self-Improvement" },
+            { "category_id": "d5f1d513-7b72-425a-ad6d-5032c02cacb5", "user_id": "876", "current_label": "perseverance", "proposed_label": "Perseverance" },
+            { "category_id": "591ccc7e-3637-4aff-9646-7b790897069b", "user_id": "870", "current_label": "self-criticism", "proposed_label": "Self-Criticism" },
+            { "category_id": "f8050af6-bdfc-4027-b4d5-2002b800cb4a", "user_id": "322", "current_label": "motivation drivers", "proposed_label": "Motivation Drivers" }
+          ]
+        },
+        {
+          "label": "Creativity & Expression",
+          "categories": [
+            { "category_id": "6727aeca-489f-4e54-85b5-0a682efbe5f5", "user_id": "42", "current_label": "creativity", "proposed_label": "Creativity" },
+            { "category_id": "32ef7aec-be72-49f5-86cd-1b700e8aa89e", "user_id": "42", "current_label": "writing", "proposed_label": "Writing" },
+            { "category_id": "e5448487-a6b4-4efd-8e1f-20fabf1ec6c2", "user_id": "294", "current_label": "art and well-being", "proposed_label": "Art & Well-Being" },
+            { "category_id": "9f62349b-81bb-4683-a1c9-3d1430d85967", "user_id": "294", "current_label": "art as therapy", "proposed_label": "Art as Therapy" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Habits, Routine & Work-Life Balance",
+      "subgroups": [
+        {
+          "label": "Habit Building & Discipline",
+          "categories": [
+            { "category_id": "196c9984-6aa4-4aa9-b6dc-64bedf122361", "user_id": "228", "current_label": "personal discipline, routine adherence", "proposed_label": "Personal Discipline & Routine" },
+            { "category_id": "bd692787-fee9-450e-b1df-a21c3c7303b6", "user_id": "294", "current_label": "habit formation", "proposed_label": "Habit Formation" },
+            { "category_id": "e3e0dd01-17a0-4c08-bc8a-f198fb538cbc", "user_id": "294", "current_label": "approach to tasks", "proposed_label": "Approach to Tasks" }
+          ]
+        },
+        {
+          "label": "Work-Life Balance",
+          "categories": [
+            { "category_id": "9a54aaa6-be1a-4978-af1b-f65d3ec445bf", "user_id": "294", "current_label": "work-life balance", "proposed_label": "Work-Life Balance" },
+            { "category_id": "807c618e-ac87-4e89-9500-b0a0520570f4", "user_id": "870", "current_label": "work-life balance, managing responsibilities", "proposed_label": "Work-Life Balance" },
+            { "category_id": "a2770699-5d6e-4474-a769-6a1a61626827", "user_id": "328", "current_label": "managing responsibilities", "proposed_label": "Managing Responsibilities" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Relationships & Connection",
+      "subgroups": [
+        {
+          "label": "Family & Belonging",
+          "categories": [
+            { "category_id": "308f4653-e3c6-4183-be5a-8affa9e6ad8c", "user_id": "870", "current_label": "family traditions, bonding activities", "proposed_label": "Family Traditions & Bonding" },
+            { "category_id": "334ccad7-e3cc-42f0-bca0-eddffc75804d", "user_id": "870", "current_label": "purpose in life, value of family", "proposed_label": "Family as Purpose" },
+            { "category_id": "5f30bfe1-443b-4046-9bd0-ab27370284f7", "user_id": "876", "current_label": "family connection", "proposed_label": "Family Connection" },
+            { "category_id": "88b1b001-f614-4677-a20a-efac2682ddf9", "user_id": "346", "current_label": "parental joy", "proposed_label": "Parental Joy" },
+            { "category_id": "9304efe5-3899-47e2-9b15-83bc90b92d39", "user_id": "870", "current_label": "cherishing memories, photography", "proposed_label": "Cherishing Memories" }
+          ]
+        },
+        {
+          "label": "Social Connection & Isolation",
+          "categories": [
+            { "category_id": "13c2c861-478b-4ec4-98f5-b6db7dd4bd66", "user_id": "876", "current_label": "community connection", "proposed_label": "Community Connection" },
+            { "category_id": "657d787e-f619-4021-badf-2b414e309d2f", "user_id": "876", "current_label": "experience of loneliness", "proposed_label": "Experience of Loneliness" },
+            { "category_id": "5147a034-825d-418f-b406-690864711a3b", "user_id": "876", "current_label": "social isolation", "proposed_label": "Social Isolation" },
+            { "category_id": "177b18ec-5581-4f6c-8408-571bf7219365", "user_id": "876", "current_label": "impact on others", "proposed_label": "Impact on Others" },
+            { "category_id": "a267ca7a-808c-438f-aefe-a4a643345c6d", "user_id": "905", "current_label": "social responsibility, burden, seeking support, relational boundaries", "proposed_label": "Relational Boundaries" },
+            { "category_id": "d294c142-e627-44c0-b99e-69874dcc1769", "user_id": "876", "current_label": "sense of purpose", "proposed_label": "Sense of Purpose" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Leisure, Rest & Intellectual Life",
+      "subgroups": [
+        {
+          "label": "Self-Care & Boundaries",
+          "categories": [
+            { "category_id": "f6e23e17-5c18-4f27-9141-d04a694a3ba6", "user_id": "390", "current_label": "judgment fear", "proposed_label": "Judgment Fear" },
+            { "category_id": "ea30f8ca-5842-445a-bd17-46e61a7f3ae4", "user_id": "390", "current_label": "self-advocacy", "proposed_label": "Self-Advocacy" },
+            { "category_id": "2c4220c2-70a2-41ec-8527-1b2fc2cd27ce", "user_id": "390", "current_label": "self-care guilt", "proposed_label": "Self-Care Guilt" },
+            { "category_id": "c90a91a5-6f8b-4ec0-aff7-b3208d56a71d", "user_id": "367", "current_label": "prioritization skills, self-care challenges", "proposed_label": "Prioritizing Self-Care" }
+          ]
+        },
+        {
+          "label": "Rest, Recreation & Nature",
+          "categories": [
+            { "category_id": "635e92b9-6622-4ffd-9901-a2a4e16f3cac", "user_id": "367", "current_label": "rest and relaxation, self-care", "proposed_label": "Rest & Self-Care" },
+            { "category_id": "251ee6a9-e71e-4ac8-9ae6-3debde37960a", "user_id": "367", "current_label": "leisure activities, relaxation", "proposed_label": "Leisure & Relaxation" },
+            { "category_id": "539f808e-b5bf-4cdb-a08e-164c91b7421c", "user_id": "367", "current_label": "nature connection, relaxation", "proposed_label": "Nature & Relaxation" },
+            { "category_id": "219b14f6-1d7b-45ab-ad23-73d649ab789e", "user_id": "367", "current_label": "water activities, leisure", "proposed_label": "Water Activities & Leisure" },
+            { "category_id": "78b3f7a5-9698-4feb-ae82-04a12b954388", "user_id": "367", "current_label": "adventure, outdoor activities", "proposed_label": "Adventure & Outdoor Activities" }
+          ]
+        },
+        {
+          "label": "Reading & Intellectual Life",
+          "categories": [
+            { "category_id": "235e6aa7-e842-4de9-99dd-d11320eecde5", "user_id": "876", "current_label": "reading as a hobby, intellectual interests", "proposed_label": "Reading & Intellectual Interests" },
+            { "category_id": "309c2aa4-4ec6-407e-beec-e20ae613f0ac", "user_id": "367", "current_label": "reading habits, personal preferences", "proposed_label": "Reading Habits" },
+            { "category_id": "17d45d3f-f88d-4fc0-8a2d-689a27d33791", "user_id": "876", "current_label": "social interaction, literary discussion, sharing interests", "proposed_label": "Literary Discussion & Sharing" },
+            { "category_id": "db54f6a1-d6b4-42ec-b01e-fa599f0b7cac", "user_id": "876", "current_label": "learning style", "proposed_label": "Learning Style" }
+          ]
+        }
+      ]
+    }
+  ]
+}
